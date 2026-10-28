@@ -1,0 +1,128 @@
+{
+  "repository": "SmartterHealth/FabricHackathon",
+  "commit": "a84b0ff81d27c5da3b1fb8aac5641cd5507a78ac",
+  "files": {
+    "patients": {
+      "sha256": "5829418a827236ad42655595f6d1b9b9f2ebaba269853b60389c3097027dca5f",
+      "rows": 200,
+      "columns": [
+        "patient_id",
+        "first_name",
+        "last_name",
+        "date_of_birth",
+        "age",
+        "gender",
+        "race",
+        "zip_code",
+        "city",
+        "state",
+        "insurance_type",
+        "primary_care_provider",
+        "risk_score"
+      ]
+    },
+    "encounters": {
+      "sha256": "3f0b2a6f9070a15e358eba525f929cfcfbb552fae9f496ed18bb76185fe43f68",
+      "rows": 1025,
+      "columns": [
+        "encounter_id",
+        "patient_id",
+        "encounter_date",
+        "encounter_time",
+        "discharge_date",
+        "encounter_type",
+        "facility_id",
+        "facility_name",
+        "department",
+        "primary_diagnosis_code",
+        "primary_diagnosis_description",
+        "attending_provider",
+        "discharge_disposition",
+        "length_of_stay_days",
+        "total_charges"
+      ]
+    },
+    "conditions": {
+      "sha256": "15817be89cb5121bbf6c20c94f249783290fa0f16c8cdc7b3660464d838180d8",
+      "rows": 428,
+      "columns": [
+        "condition_id",
+        "patient_id",
+        "encounter_id",
+        "condition_code",
+        "condition_description",
+        "condition_type",
+        "date_diagnosed",
+        "status"
+      ]
+    },
+    "claims": {
+      "sha256": "1a5dddba81a561960a88e479b6088a83070e171b9a4b22b2d898cfcdbfda9f98",
+      "rows": 1025,
+      "columns": [
+        "claim_id",
+        "patient_id",
+        "encounter_id",
+        "claim_date",
+        "payer",
+        "payer_type",
+        "claim_amount",
+        "paid_amount",
+        "denied_amount",
+        "patient_responsibility",
+        "denial_reason",
+        "claim_status",
+        "days_to_payment"
+      ]
+    },
+    "vitals": {
+      "sha256": "10f4ff532dc49a7277c9742ad7f2b8f8cc69f1588131249253312cf95df8e62d",
+      "rows": 4299,
+      "columns": [
+        "vital_id",
+        "patient_id",
+        "encounter_id",
+        "facility_name",
+        "department",
+        "timestamp",
+        "heart_rate",
+        "systolic_bp",
+        "diastolic_bp",
+        "temperature_f",
+        "respiratory_rate",
+        "spo2_percent",
+        "pain_level"
+      ]
+    },
+    "medications": {
+      "sha256": "ef3acd0dffcdc22eb767498918e67f81591cf357253f1fc72862fbe4bf6618c0",
+      "rows": 643,
+      "columns": [
+        "medication_id",
+        "patient_id",
+        "encounter_id",
+        "medication_name",
+        "medication_class",
+        "dosage",
+        "frequency",
+        "prescriber",
+        "start_date",
+        "end_date",
+        "status"
+      ]
+    },
+    "clinical_notes": {
+      "sha256": "d9fe2e32b0544d26011fcf295a036f19163c51235246e3af70ed24f3863a2e59",
+      "rows": 150,
+      "columns": [
+        "note_id",
+        "patient_id",
+        "encounter_id",
+        "note_date",
+        "note_type",
+        "provider",
+        "note_text"
+      ]
+    }
+  }
+}

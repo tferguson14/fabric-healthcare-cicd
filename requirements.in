@@ -1,0 +1,6 @@
+fabric-cicd==1.4.0
+azure-identity==1.27.0
+azure-storage-file-datalake==12.26.0
+PyYAML==6.0.3
+requests==2.34.2
+pytest==9.2.0

@@ -1,0 +1,74 @@
+name: Deploy PROD
+on:
+  push:
+    branches: [prod]
+permissions:
+  contents: read
+concurrency:
+  group: fabric-prod
+  cancel-in-progress: false
+jobs:
+  verify:
+    name: Require tested release
+    if: vars.LAB_READY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python -m scripts.verify_promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+  deploy:
+    name: Deploy and validate PROD
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      FABRIC_WORKSPACE_ID: ${{ vars.FABRIC_WORKSPACE_ID }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python -m scripts.validate_repo
+      - run: python -m pytest -q
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - run: python -m scripts.deploy --environment prod
+      - run: python -m scripts.seed_data --environment prod
+      - run: python -m scripts.run_notebooks --environment prod
+      - name: Record successful validation
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: prod-validation-${{ github.sha }}
+          path: artifacts/validation-receipt.json
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
+      - name: Preserve job progress
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: prod-jobs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/job-progress.json
+          if-no-files-found: ignore

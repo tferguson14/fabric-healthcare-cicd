@@ -2,6 +2,10 @@
 
 Prepared October 28, 2026. This record separates local verification from cloud execution.
 
+Naming and development-flow revision October 29, 2026: generalized the lab to Healthcare, renamed the four bootstrap notebooks and their script references from HF to HC, and made an isolated feature workspace part of Module 6. Feature workspace provisioning, Git synchronization, manual binding checks, and Spark runs still require live verification. The dependency files retain the user's tested commit `3d06f34` versions.
+
+Rechecked the revised starter in a clean Python 3.12 environment: pinned requirements installed, `pip check` passed, all 20 tests passed, and bootstrap repository validation passed. This verifies the local rename without claiming a live Fabric deployment.
+
 ## Passed locally
 
 - Installed the pinned dependency set in a clean Python 3.12 virtual environment; `pip check` found no dependency conflicts.

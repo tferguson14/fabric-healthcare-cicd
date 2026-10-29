@@ -1,7 +1,7 @@
 {
   "lakehouse_name": "healthcare_lakehouse",
   "items_in_scope": ["Lakehouse", "Notebook"],
-  "notebook_order": ["HF01_Bronze", "HF02_Silver", "HF03_Gold", "HF04_Validate"],
+  "notebook_order": ["HC01_Bronze", "HC02_Silver", "HC03_Gold", "HC04_Validate"],
   "environments": {
     "dev": {"workspace_id": "REPLACE_DEV_WORKSPACE_ID", "lakehouse_id": "REPLACE_DEV_LAKEHOUSE_ID"},
     "test": {"workspace_id": "REPLACE_TEST_WORKSPACE_ID", "lakehouse_id": "REPLACE_TEST_LAKEHOUSE_ID"},

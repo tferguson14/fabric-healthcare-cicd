@@ -14,7 +14,7 @@ def run(stage):
     env = cfg["environments"][stage]
     client = FabricClient()
     audit(stage, client)
-    pipeline = client.item(env["workspace_id"], "HF_Healthcare_ETL", "DataPipeline")
+    pipeline = client.item(env["workspace_id"], "Healthcare_ETL", "DataPipeline")
     definition = client.definition(env["workspace_id"], pipeline["id"])
     text = "\n".join(base64.b64decode(p["payload"]).decode("utf-8")
         for p in definition["definition"]["parts"] if p["path"].endswith("pipeline-content.json"))
@@ -31,8 +31,8 @@ def run(stage):
     (out / "validation-receipt.json").unlink(missing_ok=True)
     jobs = []
     for name, item, job_type in [
-        ("HF_Healthcare_ETL", pipeline, "Pipeline"),
-        ("HF04_Validate", client.item(env["workspace_id"], "HF04_Validate", "Notebook"), "RunNotebook")]:
+        ("Healthcare_ETL", pipeline, "Pipeline"),
+        ("HC04_Validate", client.item(env["workspace_id"], "HC04_Validate", "Notebook"), "RunNotebook")]:
         result = client.run_job(env["workspace_id"], item["id"], job_type)
         jobs.append({"name": name, "item_id": item["id"], "job_id": result["id"], "status": result["status"]})
         (out / "job-progress.json").write_text(json.dumps(jobs, indent=2))

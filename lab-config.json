@@ -1,0 +1,24 @@
+{
+  "lakehouse_name": "healthcare_lakehouse",
+  "items_in_scope": ["Lakehouse", "Notebook"],
+  "notebook_order": [
+    "HC01_Bronze",
+    "HC02_Silver",
+    "HC03_Gold",
+    "HC04_Validate"
+  ],
+  "environments": {
+    "dev": {
+      "workspace_id": "3cbafb61-c063-4698-a8fe-360ded48fd06",
+      "lakehouse_id": "7812ae59-47aa-4b69-8ce1-f54842a0e628"
+    },
+    "test": {
+      "workspace_id": "cde3ea83-335a-4d47-a74a-4f0be5551de5",
+      "lakehouse_id": "3745bc9f-a5e4-4cba-9c18-82e5b03240c8"
+    },
+    "prod": {
+      "workspace_id": "8e033aa8-b5db-4da0-9366-05a9f638d4aa",
+      "lakehouse_id": "ddd91dc3-a145-4b57-85f8-7665e7e7839e"
+    }
+  }
+}

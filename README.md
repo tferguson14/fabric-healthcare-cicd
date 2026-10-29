@@ -1,10 +1,12 @@
-# HealthFirst Fabric CI/CD lab
+# Healthcare Fabric CI/CD lab
 
 Build a personal Fabric CI/CD demonstration with GitHub Actions, VS Code, Entra OIDC, and fabric-cicd.
 
 **Start with [the lab guide](docs/LAB_GUIDE.md).** Complete one checkpoint at a time. The package contains four importable notebooks, three GitHub workflows, deployment and validation tools, tests, and a pinned source-data manifest. Fabric-generated item definitions are created during Module 2; they cannot contain your real workspace IDs before that setup.
 
 The core lab runs the four notebooks through the Fabric API. Module 9 adds Fabric Data Pipeline orchestration and a Power BI extension. PROD is a dedicated demonstration workspace with synthetic data. The notebook writes replace only the lab's demonstration tables.
+
+Module 6 pairs `feature/claims-by-facility` with `HC-CICD-FEAT-Claims` for isolated runtime testing before the PR merges into `dev`. Three permanent workspaces use the names `HC-CICD-DEV`, `HC-CICD-TEST`, and `HC-CICD-PROD`. Feature and DEV Git synchronization is manual; TEST and PROD are published by GitHub Actions. Follow the guide's lakehouse-binding checks before running a feature notebook.
 
 ## Local setup
 
@@ -32,6 +34,7 @@ The downloader verifies the seven files against a pinned upstream commit and SHA
 | `sample-manifest.json` | Pinned upstream commit, file hashes, schemas, counts |
 | `lab-config.example.json` | Copy to `lab-config.json` and enter all environment IDs |
 | `docs/LAB_GUIDE.md` | Detailed modules and customer explanations |
+| `docs/GIT_FLOW.md` | Feature branches, workspaces, and promotion diagram |
 | `docs/architecture.png` | Architecture visual |
 | `docs/VALIDATION.md` | What was verified locally and what remains for Fabric |
 

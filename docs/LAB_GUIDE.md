@@ -1,14 +1,14 @@
-# Fabric CI CD with GitHub and VS Code
+# Healthcare Fabric CI CD with GitHub and VS Code
 
 ## A practical lab for Taisha Ferguson
 
-Build and rehearse a HealthFirst analytics release using GitHub Actions, VS Code, Microsoft Entra workload identity federation, and the fabric-cicd Python package. The finished core lab promotes a claims analysis from DEV through TEST into a dedicated PROD demonstration workspace. It checks the deployed connections, runs the notebooks, validates the data, and preserves release evidence.
+Build and rehearse a healthcare analytics release using GitHub Actions, VS Code, Microsoft Entra workload identity federation, and the fabric-cicd Python package. The finished core lab promotes a claims analysis from an isolated feature workspace through DEV and TEST into a dedicated PROD demonstration workspace. It checks the deployed connections, runs the notebooks, validates the data, and preserves release evidence.
 
 This guide translates the release pattern in the Microsoft Learn Azure DevOps tutorial into GitHub. Best-practice explanations distinguish choices made for a personal lab from controls to discuss with customers. Complete the modules in order and stop at each checkpoint before progressing. The estimates are planning allowances, not measured execution times; allow a few working sessions for the first build.
 
 **Readiness:** The companion package includes locally checked code and configuration. Live GitHub OIDC authentication, Fabric item publication, Spark execution, and tenant-specific permissions must pass the checkpoints in your environment before the lab is customer-ready. See `docs/VALIDATION.md` for the exact verification record.
 
-**Core scope:** One schema-enabled lakehouse and four notebooks in each of three workspaces. All seven CSVs enter Bronze. Patients, encounters, and claims enter Silver. Gold contains a claims-denial summary. The other four Bronze datasets remain available for future exercises. The core runs notebooks sequentially through the Fabric API; Module 9 adds a Data Pipeline and outlines the reporting extension.
+**Core scope:** One schema-enabled lakehouse and four notebooks in each of three permanent workspaces, plus an isolated feature workspace created for Module 6. All seven CSVs enter Bronze. Patients, encounters, and claims enter Silver. Gold contains a claims-denial summary. The other four Bronze datasets remain available for future exercises. The core runs notebooks sequentially through the Fabric API; Module 9 adds a Data Pipeline and outlines the reporting extension.
 
 | Module | Outcome | Planning allowance |
 |---|---|---|
@@ -18,7 +18,7 @@ This guide translates the release pattern in the Microsoft Learn Azure DevOps tu
 | 3 | Export Fabric definitions and parameterize targets | 20 to 40 minutes |
 | 4 | Configure OIDC and environment approvals | 30 to 60 minutes |
 | 5 | Deploy and execute the first TEST release | 30 to 60 minutes |
-| 6 | Make a business change in VS Code | 20 to 40 minutes |
+| 6 | Develop and test in a feature branch and workspace | 40 to 60 minutes |
 | 7 | Promote the tested release to PROD | 20 to 40 minutes |
 | 8 | Demonstrate failure and recovery | 30 to 45 minutes |
 | 9 | Extend orchestration and reporting | After the core passes |
@@ -27,7 +27,11 @@ This guide translates the release pattern in the Microsoft Learn Azure DevOps tu
 
 ![Fabric GitHub CI CD architecture](architecture.png)
 
-DEV connects to the `dev` Git branch and the `fabric` folder. Fabric's Commit to Git exports item definitions. Update from Git imports reviewed source changes. VS Code edits a local clone. GitHub Actions publishes TEST and PROD using the branch content and environment-specific replacements. TEST and PROD remain disconnected from Fabric Git integration in this design. [S01, S03, S04]
+DEV connects to the `dev` integration branch and the `fabric` folder. The initial Commit to Git exports the baseline; subsequent changes arrive through feature pull requests and an explicit Update from Git. VS Code edits the feature branch in a local clone. A separate workspace connects to that feature branch for isolated runtime testing. GitHub Actions publishes TEST and PROD using branch content and environment-specific replacements. TEST and PROD remain disconnected from Fabric Git integration in this design. [S01, S02, S03, S04]
+
+Three environment branches are permanent: `dev`, `test`, and `prod`. A short-lived branch such as `feature/claims-by-facility` starts from current `dev` and is paired with `HC-CICD-FEAT-Claims`. All four workspaces use their own `healthcare_lakehouse`. The feature workspace is created only when Module 6 begins; it is not another permanent promotion stage. [S02, S18]
+
+CI runs on pushes to `dev` and on pull requests targeting `dev`, `test`, or `prod`. A feature-branch push by itself does not start CI in the supplied workflow; open a draft pull request to start checks while developing. DEV and feature Git synchronization are manual. Feature runtime evidence is reviewed in the PR; automated TEST and PROD runs enforce the release checks. These are deliberate lab simplifications, not claims of automatic feature provisioning or DEV synchronization.
 
 The deployment identity uses OIDC to authenticate to Entra. Fabric Git integration uses its own GitHub personal access token. Your interactive Azure CLI login is a third, local-development identity. Keeping these three paths explicit makes authentication problems easier to diagnose. [S03, S06, S07]
 
@@ -49,7 +53,7 @@ Data remains in each environment. Deploying a lakehouse definition does not tran
 
 ### Choose the lab boundaries
 
-1. Use a new repository named `fabric-healthfirst-cicd` and new workspaces named `HF-CICD-DEV`, `HF-CICD-TEST`, and `HF-CICD-PROD`. Reuse the healthcare scenario from your MCP lab while keeping these release experiments in their own workspaces.
+1. Use a new repository named `fabric-healthcare-cicd` and new workspaces named `HC-CICD-DEV`, `HC-CICD-TEST`, and `HC-CICD-PROD`. Reuse the healthcare scenario from your MCP lab while keeping these release experiments in their own workspaces.
 2. Confirm that your Fabric capacity is active and can run Spark notebooks. Your previously used `taishafabric F8` is a candidate if still available. Start with one run at a time and measure capacity behavior. This lab does not require Copilot, an LLM endpoint, or the full hackathon workload.
 3. Choose repository visibility according to your organization's policy and GitHub plan. GitHub's required environment reviewers are available for public repositories on Free, Pro, and Team plans. Private/internal approval support requires an eligible Enterprise configuration. Check the actual settings page before relying on a gate. [S08]
 4. For a solo rehearsal, you can designate yourself as an environment reviewer and leave prevention of self-review off. A required pull-request review is different: you cannot approve your own PR. Use zero required PR approvals for the solo lab, or add a collaborator. Customer production controls should have independent reviewers.
@@ -59,8 +63,8 @@ Data remains in each environment. Deploying a lakehouse definition does not tran
 
 | Requirement | Who or where to check |
 |---|---|
-| Create the three workspaces and assign capacity | Fabric workspace and capacity permissions |
-| Connect DEV to GitHub | Workspace Admin, GitHub repository access, fine-grained PAT |
+| Create three permanent workspaces and a feature workspace, then assign capacity | Fabric workspace and capacity permissions |
+| Connect DEV and feature workspaces to GitHub | Workspace Admin, GitHub repository access, fine-grained PAT |
 | Synchronize with Git and GitHub | Fabric Git integration tenant settings |
 | Register Entra apps and federated credentials | Entra app-registration permission or an administrator |
 | Call Fabric APIs as the deployment identities | Fabric tenant developer setting and permitted security group |
@@ -71,7 +75,7 @@ The current developer-settings documentation calls the relevant toggle **Service
 
 OneLake uploads also require **Users can access data stored in OneLake with apps external to Fabric** to be permitted for the identities in use. [S10]
 
-**Best practice discussion:** Microsoft recommends isolating production capacity from development/testing and provisioning resources repeatably. Sharing one capacity and creating three workspaces manually keeps this personal lab small. Workspace isolation separates content and permissions, while capacity isolation separates compute contention. A customer implementation should choose both deliberately. [S02]
+**Best practice discussion:** Microsoft recommends isolating production capacity from development/testing and provisioning resources repeatably. Sharing one capacity and creating the lab workspaces manually keeps this personal lab small. Workspace isolation separates content and permissions, while capacity isolation separates compute contention. A customer implementation should choose both deliberately. [S02]
 
 **Checkpoint 0:** Record the tenant ID, capacity name, GitHub owner/repository, repository visibility/plan, and who can configure the Fabric and Entra settings. No deployment should be enabled yet.
 
@@ -79,7 +83,9 @@ OneLake uploads also require **Users can access data stored in OneLake with apps
 
 ### Prepare the local project
 
-1. Extract the companion ZIP into a new folder, for example `C:\Users\taferguson\fabric-healthfirst-cicd`. Open the folder containing `README.md` in VS Code.
+For your existing checkout at commit `3d06f34`, apply `Healthcare_Lab_Update.patch` before continuing. The patch updates the naming and development flow while retaining your working dependency versions. Keep using your existing folder and skip Git initialization below. The original October 28 ZIP contains the previous names; after committing this revision, use the updated repository as the source for future lab copies.
+
+1. For a fresh lab, extract a ZIP of the revised starter into a new folder, for example `C:\Labs\fabric-healthcare-cicd`. Verify that its README title says Healthcare and its bootstrap notebooks use the `HC` prefix. Open the folder containing `README.md` in VS Code.
 2. Install or verify Git, Python 3.12, Azure CLI, and VS Code. The suggested Python, Jupyter, GitHub Pull Requests, and YAML extensions are listed in `.vscode/extensions.json`.
 3. Open a PowerShell terminal in VS Code. These commands use the virtual environment's Python directly, so PowerShell activation-policy changes are unnecessary.
 
@@ -106,8 +112,8 @@ py -3.12 -m venv .venv
 git init -b dev
 git add .
 git status
-git commit -m "Initialize HealthFirst CI CD lab"
-git remote add origin https://github.com/OWNER/fabric-healthfirst-cicd.git
+git commit -m "Initialize Healthcare CI CD lab"
+git remote add origin https://github.com/OWNER/fabric-healthcare-cicd.git
 git push -u origin dev
 git branch test
 git branch prod
@@ -126,7 +132,7 @@ git push origin test prod
 
 ### Create the environment containers
 
-1. In Fabric, create `HF-CICD-DEV`, `HF-CICD-TEST`, and `HF-CICD-PROD`. Assign each to the chosen active capacity.
+1. In Fabric, create `HC-CICD-DEV`, `HC-CICD-TEST`, and `HC-CICD-PROD`. Assign each to the chosen active capacity.
 2. In each workspace, create a **schema-enabled** lakehouse named exactly `healthcare_lakehouse`. Keep the same display name across environments. The notebooks explicitly use the `dbo` schema.
 3. Wait for each SQL analytics endpoint to finish provisioning. Record each workspace ID and lakehouse item ID from its URL/item details. Use the lakehouse ID, not the SQL endpoint ID.
 4. Copy `lab-config.example.json` to `lab-config.json`. Enter the six real GUIDs under the corresponding environment. Workspace IDs and lakehouse IDs must all be different across stages. Keep `items_in_scope` and `notebook_order` unchanged for the core lab.
@@ -135,8 +141,8 @@ The target lakehouses are provisioned before the first release so their IDs are 
 
 ### Import and attach the notebooks
 
-1. In the DEV workspace, import all four notebooks from `bootstrap/`: `HF01_Bronze.ipynb`, `HF02_Silver.ipynb`, `HF03_Gold.ipynb`, and `HF04_Validate.ipynb`.
-2. Confirm the display names are exactly `HF01_Bronze`, `HF02_Silver`, `HF03_Gold`, and `HF04_Validate`. Remove accidental filename suffixes if the import UI adds them.
+1. In the DEV workspace, import all four notebooks from `bootstrap/`: `HC01_Bronze.ipynb`, `HC02_Silver.ipynb`, `HC03_Gold.ipynb`, and `HC04_Validate.ipynb`.
+2. Confirm the display names are exactly `HC01_Bronze`, `HC02_Silver`, `HC03_Gold`, and `HC04_Validate`. Remove accidental filename suffixes if the import UI adds them.
 3. Open each notebook. Add DEV's `healthcare_lakehouse` and set it as the default lakehouse. Use the normal PySpark runtime; this core lab needs no custom Environment item or package installation inside Spark.
 4. Save each notebook. If a Spark session was already running before you changed the default lakehouse, stop it and start a new session.
 
@@ -203,7 +209,7 @@ Do not recreate logical IDs or hand-author `.platform` files. Those files establ
 
 ### Create the deployment identities
 
-Use two Entra app registrations for the full lab: `hf-cicd-test` and `hf-cicd-prod`. Each identity has access only to its target workspace. If your administrator provides an existing approved identity, document its broader access as a lab exception.
+Use two Entra app registrations for the full lab: `hc-cicd-test` and `hc-cicd-prod`. Each identity has access only to its target workspace. If your administrator provides an existing approved identity, document its broader access as a lab exception.
 
 1. In Entra App registrations, create a single-tenant app. Record its Application client ID and Directory tenant ID. No redirect URI is needed for this workload.
 2. Open Certificates and secrets, Federated credentials, Add credential. Select the GitHub Actions scenario. Enter the exact GitHub owner and repository. Select entity type **Environment** and enter `test` for the TEST app.
@@ -228,7 +234,7 @@ Configure required reviewers and deployment branch restrictions. The `test` envi
 
 Protect `test` and `prod`: require a pull request, require the **Validate repository** check once it has appeared, block force pushes and branch deletion, and restrict bypass according to your plan. Do not require linear history, since this lab intentionally uses merge commits. A solo lab can require PRs without requiring a second person's approval. Inspect the effective rules; an unavailable setting is not enforced just because it is described here.
 
-After the initial Fabric export, apply the same PR discipline to `dev`. Future VS Code edits use feature branches. Fabric edits can be committed to a standalone feature branch and merged through a PR. DEV then uses Update from Git to import the reviewed result. Dedicated feature workspaces are the scalable team extension; the solo core keeps one DEV workspace. [S02, S03]
+After the initial Fabric export and configuration, apply the same PR discipline to `dev`. Future VS Code edits use feature branches paired with isolated feature workspaces. Module 6 runs and validates the proposed change before merging. DEV then uses Update from Git to import the reviewed result. Keep feature-only lakehouse attachments local and preserve canonical DEV references in the reviewed source, as explained in Module 6. [S02, S03]
 
 **Checkpoint 4:** Both Entra subjects, environment variables, branch restrictions, and reviewers are configured. Set repository variable `LAB_READY` to `true` only now. Setting it does not itself start a release; the next TEST/PROD push does.
 
@@ -248,7 +254,7 @@ The deployment covers all in-scope Lakehouse and Notebook definitions, even if o
 
 **Checkpoint 5:** Both the workflow and all four Fabric jobs are successful. A successful local login or successful item publication does not satisfy this checkpoint.
 
-## Module 6 Make a business change in VS Code
+## Module 6 Develop in a feature branch and workspace
 
 ### Add facility detail
 
@@ -258,7 +264,7 @@ git pull --ff-only origin dev
 git switch -c feature/claims-by-facility
 ```
 
-1. Open `fabric/HF03_Gold.Notebook/notebook-content.py`. If Fabric used a different folder name, locate the item by its `.platform` displayName. Change only `GROUP_BY_FACILITY = False` to `GROUP_BY_FACILITY = True`.
+1. Open `fabric/HC03_Gold.Notebook/notebook-content.py`. If Fabric used a different folder name, locate the item by its `.platform` displayName. Change only `GROUP_BY_FACILITY = False` to `GROUP_BY_FACILITY = True`.
 2. Explain the business change: the existing payer summary now separates each payer by facility, enabling comparisons across the three synthetic hospitals.
 3. Run the local checks and inspect the diff. The validation notebook already supports both grains and calculates the expected results independently.
 
@@ -271,14 +277,30 @@ git commit -m "Break down claims denials by facility"
 git push -u origin feature/claims-by-facility
 ```
 
-4. Open a feature-to-`dev` PR. Review the one-line business change and successful CI checks, then merge. Pull `dev` locally.
-5. In the DEV workspace Source control pane, use **Update from Git**. Run Gold and Validate to inspect the new output. Confirm 30 payer/facility groups and the same total 1025 claims. This manual DEV sync is an intentional lab step; Git pushes do not automatically update the live workspace.
-6. Open and merge a `dev`-to-`test` PR. Approve the TEST deployment and wait for its new validation receipt. Confirm TEST now has 30 groups. Record the successful TEST run URL and commit SHA.
-7. Delete the completed feature branch after the PR is merged, leaving the environment branches intact.
+4. Open a draft PR from `feature/claims-by-facility` to `dev`. This triggers CI without merging the change. Leave the PR unmerged until the feature workspace has passed its runtime check.
 
-**Customer explanation:** The PR exposes exactly what changed in the business logic. The result has finer detail, while the total number of claims stays constant. Testing that invariant helps detect join multiplication and accidental filtering.
+### Test in an isolated feature workspace
 
-**Checkpoint 6:** DEV and TEST show the new grouping, and the exact latest TEST release has a successful workflow and receipt. Do not edit TEST items manually to make the checks pass.
+1. Create `HC-CICD-FEAT-Claims` on the lab capacity. In its Git integration settings, connect to the same repository, branch `feature/claims-by-facility`, and directory `fabric`. Use Update from Git to populate all five core items. Keep the shared DEV workspace connected to `dev`. Fabric also offers Branch out to workspace as a way to create a branch and workspace together; the explicit steps here keep branch creation visible in VS Code. Do not create a second branch with the same name. [S03, S18]
+2. Confirm the feature workspace contains its own schema-enabled `healthcare_lakehouse` and all four `HC` notebooks. In every notebook, verify the default lakehouse belongs to the feature workspace. Reattach the feature lakehouse as needed and remove DEV attachments from the working notebook. Save and start a new Spark session after changing an attachment. Git sync alone is not proof of correct binding. [S04]
+3. In the feature lakehouse Files area, create `raw/cicd_lab`. Upload the seven verified CSVs from the local `data` folder, plus the repository's `sample-manifest.json`, into that folder. The feature lakehouse must have its own files and tables. The supplied `seed_data` command accepts only the three permanent environments; do not substitute feature IDs into their configuration.
+4. Run `HC01_Bronze`, `HC02_Silver`, `HC03_Gold`, and `HC04_Validate` in order in the feature workspace. Confirm validation passes, Gold has 30 payer/facility groups, total claims remain 1025, and denied claims remain 40. Record the tested feature commit SHA and notebook run evidence in the PR. Shared DEV should still have its unchanged baseline of 10 groups until the merge.
+5. Keep feature-only lakehouse bindings as local workspace configuration in this lab. Author the business change in VS Code; do not Commit to Git from the feature workspace after rebinding. Source control can show local metadata differences. Keep the DEV physical IDs in the reviewed notebook source because the release scripts substitute those IDs for TEST and PROD. Do not hand-edit `.platform` logical IDs or Fabric-managed `notebook-settings.json`.
+
+If another feature commit is needed, review any local workspace differences before updating from Git, then repeat the binding check and runtime validation for that new commit. With this VS Code authoring path, only deliberate feature attachment changes should exist locally; investigate other differences before discarding anything. Never assume a previous successful run validates a later commit.
+
+This edition uses the tutorial's explicit physical-ID substitutions. If Fabric exports logical-only lakehouse metadata or auto-binding settings that conflict with the strict validator, stop at the binding checkpoint and adapt the validator and deployment configuration to the actual exported format. Enabling auto-binding is a separate tested change; do not bypass a failed check to proceed. [S04, S06]
+
+### Merge and promote the tested change
+
+1. Review the feature-to-`dev` PR: the business diff, successful CI, and feature-workspace run evidence must refer to the same feature commit. Merge only after all three checks pass, then pull `dev` locally. For this lab, retain the demonstrated merge-commit promotion style.
+2. In the DEV workspace Source control pane, use **Update from Git**. Verify its notebooks still use the DEV lakehouse. Run Gold and Validate to inspect the integrated output. Confirm 30 groups and the same total 1025 claims. Git pushes do not automatically update this workspace.
+3. Open and merge a `dev`-to-`test` PR. Approve the TEST deployment and wait for its validation receipt. Confirm TEST now has 30 groups. Record the successful TEST run URL and commit SHA.
+4. Delete the completed feature branch after merging. Retire the feature workspace after saving its run evidence, or retain it for reuse after reviewing its Git connection and data. Leave the three permanent workspaces and environment branches in place. [S02]
+
+**Customer explanation:** A feature branch isolates source changes; a feature workspace isolates execution and data. We can test a new result without changing shared DEV. The PR exposes the business change and its evidence. The result has finer detail while the total number of claims stays constant, helping detect join multiplication and accidental filtering.
+
+**Checkpoint 6:** Feature runtime evidence is recorded before the merge. DEV and TEST then show the new grouping, and the exact latest TEST release has a successful workflow and receipt. Do not edit TEST items manually to make the checks pass.
 
 ## Module 7 Promote the tested version to PROD
 
@@ -303,7 +325,7 @@ Create a new feature branch from current `dev`. Introduce a Python syntax error 
 ### Show a runtime data failure
 
 1. Create `feature/denial-regression` from current `dev`. In Gold, change the rate multiplier from `100.0` to `1000.0`. The code remains syntactically valid, so local CI is not expected to catch this business defect.
-2. Merge through DEV and TEST. Approve the TEST deployment and observe that HF04_Validate fails when the computed rate differs from the independent raw-data calculation.
+2. Normally, the feature-workspace validation must catch this defect and block the PR. For this deliberate failure demonstration only, label the change as an intentional negative test and omit that manual runtime gate so the automatic TEST check can be demonstrated. Merge through DEV and TEST, approve the TEST deployment, and observe that HC04_Validate fails when the computed rate differs from the independent raw-data calculation. This exception is part of the failure exercise, not the normal release procedure.
 3. Show the failed Fabric job and GitHub run. No successful validation receipt is produced for that commit. Avoid merging this version into PROD during normal use; the production guard would reject it because it lacks successful TEST evidence.
 4. Restore `100.0` on a new feature branch from current `dev`, review the diff, merge through DEV and TEST, and obtain a new successful TEST run. Only then promote to PROD.
 
@@ -331,14 +353,14 @@ After the reviewed rollback runs, expect 10 Gold groups and the same 1025 total 
 
 The core release script is the single entry point for sequential notebook execution. This extension demonstrates Fabric orchestration after the core identity path works.
 
-1. In DEV, create a Data Pipeline named `HF_Healthcare_ETL`. Add four Notebook activities in the same order as the core notebooks. Connect each activity to the next using the success dependency, so validation cannot run ahead of Gold.
+1. Create a new feature branch and feature workspace using Module 6. In that workspace, create a Data Pipeline named `Healthcare_ETL`. Add four Notebook activities in the same order as the core notebooks. Connect each activity to the next using the success dependency, so validation cannot run ahead of Gold.
 2. Select the notebook in the current workspace for every activity. If the activity requires a Fabric connection, create or select the approved connection and record how its identity will work in TEST and PROD.
-3. Run the pipeline in DEV and confirm all four activities succeed. A deployment identity and a workload connection identity may have different permissions; inspect both.
-4. Commit the pipeline to a feature branch using Fabric source control and merge into `dev`. Add `DataPipeline` to `items_in_scope` in `lab-config.json` through the same reviewed change. Keep the core notebook order unchanged.
-5. Inspect `pipeline-content.json` for workspace, notebook, and connection references. The package handles supported item references, while connection objects must be provisioned separately and their IDs parameterized. Update `parameter.yml` and its generator/check deliberately if adding new rules; the initial checker intentionally rejects unexpected mappings. [S06, S15]
+3. Run the pipeline in the feature workspace and confirm all four activities succeed. A deployment identity and a workload connection identity may have different permissions; inspect both.
+4. Export only the new pipeline to the feature branch using Fabric source control. Do not commit the notebooks' feature-only lakehouse bindings. Add `DataPipeline` to `items_in_scope` in `lab-config.json` through the same reviewed change. Keep the core notebook order unchanged and leave the PR unmerged while checking references.
+5. Inspect `pipeline-content.json` for workspace, notebook, and connection references. Normalize any feature-specific physical references to the canonical DEV counterparts before merging; preserve Fabric-generated logical identities. Connection objects must be provisioned separately and their IDs parameterized. Update `parameter.yml` and its generator/check deliberately if adding new rules; the initial checker intentionally rejects unexpected mappings. Review the actual export format and do not promote while any feature-only reference remains. After review and merge, update DEV from Git, verify DEV bindings, and run the pipeline there. [S06, S15]
 6. Deploy to TEST. Before running, open the target pipeline and verify each activity targets the TEST notebook and appropriate connection. Run it in the UI first, then use `python -m scripts.run_pipeline --environment test` to prove unattended execution.
-7. The included pipeline runner audits the four notebook bindings and checks that the pipeline's definition mentions the four target notebook IDs. It rejects embedded IDs belonging to the other configured environments. It waits for the pipeline to complete and then runs HF04_Validate independently. An unresolved or logical-only reference fails closed for manual inspection rather than guessing.
-8. Once this extension is verified, change the release workflows to call the pipeline runner instead of the notebook runner. Make that workflow change in DEV, test it, and promote it. Run exactly one orchestration path per release.
+7. The included pipeline runner audits the four notebook bindings and checks that the pipeline's definition mentions the four target notebook IDs. It rejects embedded IDs belonging to the other configured environments. It waits for the pipeline to complete and then runs HC04_Validate independently. An unresolved or logical-only reference fails closed for manual inspection rather than guessing.
+8. Once this extension is verified, change the release workflows to call the pipeline runner instead of the notebook runner. Make that workflow change on a feature branch, merge through `dev`, test it, and promote it. Run exactly one orchestration path per release.
 
 This extension needs live verification of pipeline reference format and connection behavior. A pipeline created or modified by an SPN can have that SPN as its last-modified identity, but that does not automatically grant access to every referenced data source. [S15]
 
@@ -350,7 +372,7 @@ The starter validator deliberately allows only Lakehouse, Notebook, and optional
 
 ### Scale toward a customer implementation
 
-Discuss separate production capacity, dedicated feature workspaces, variable libraries for supported runtime settings, environment-specific connections, repeatable provisioning with Terraform or APIs, and independently reviewed releases. Select these controls according to the customer's workload and operating model. [S02]
+Discuss separate production capacity, multiple developer or team feature workspaces, automated DEV synchronization and post-sync binding checks, variable libraries for supported runtime settings, environment-specific connections, repeatable provisioning with Terraform or APIs, and independently reviewed releases. Select these controls according to the customer's workload and operating model. [S02]
 
 For higher release volume, consider a shared release tag or immutable artifact promoted through stages. This lab intentionally keeps per-environment branches to stay close to the source tutorial. The branch model is a teaching choice, not a universal requirement.
 
@@ -360,8 +382,8 @@ For higher release volume, consider a shared release tag or immutable artifact p
 
 | Segment | Show | Explain |
 |---|---|---|
-| Architecture | Diagram and three workspaces | Source control, deployment, and data execution are separate responsibilities |
-| Source change | Gold notebook diff in VS Code | The business change is one reviewed source change |
+| Architecture | Diagram, three permanent workspaces, and a feature workspace | Source control, deployment, and data execution are separate responsibilities |
+| Source change | Feature branch diff and feature workspace result | Isolate both the source change and its runtime test before merging |
 | CI | Pull-request checks | Cheap checks run before cloud credentials are used |
 | TEST | Workflow, target bindings, notebook jobs | Published definitions must also execute correctly |
 | Approval | PROD guard and environment approval | Review combines technical evidence with human authorization |
@@ -376,7 +398,8 @@ Reserve roughly 15 to 20 minutes for the presentation, but rehearse actual Spark
 |---|---|---|
 | One shared capacity | Reduce setup and cost | Isolate production capacity and monitor concurrency |
 | Manual workspace/lakehouse setup | Make IDs and boundaries visible | Provision repeatably with reviewed IaC or setup automation |
-| One shared DEV workspace | Keep the solo exercise small | Use dedicated feature workspaces for concurrent development |
+| One feature workspace per exercise | Test independently before updating shared DEV | Scale to developers or teams with controlled creation, reuse, and cleanup |
+| Manual feature and DEV synchronization | Make binding and execution checks visible | Automate synchronization and post-sync checks with enforced PR evidence |
 | Self-approved deployment | Allow one person to rehearse | Independent release approval and controlled bypass |
 | Static target GUID mapping | Teach the tutorial's substitution model | Evaluate dynamic references and variable libraries by item support |
 | Full lab-scope publication | Keep desired content predictable | Add selective deployment only with dependency-aware tests |
@@ -418,6 +441,7 @@ Set `LAB_READY` to `false`, stop active jobs, and remove any demo schedules you 
 | DEV workspace and lakehouse IDs | |
 | TEST workspace and lakehouse IDs | |
 | PROD workspace and lakehouse IDs | |
+| Feature branch and workspace run evidence | |
 | TEST and PROD deployment client IDs | |
 | Successful TEST run URL and source commit | |
 | Successful PROD run URL and merge commit | |
@@ -446,5 +470,6 @@ Use these primary sources when explaining platform behavior. The scripts, exerci
 - **S15** [Fabric Data Factory REST capabilities](https://learn.microsoft.com/en-us/fabric/data-factory/pipeline-rest-api-capabilities) and [pipeline service principal ownership](https://learn.microsoft.com/en-us/fabric/data-factory/set-pipeline-owner-tutorial)
 - **S16** [fabric-cicd supported item behavior](https://microsoft.github.io/fabric-cicd/1.4.0/reference/item_types/)
 - **S17** [SmartterHealth healthcare sample](https://github.com/SmartterHealth/FabricHackathon) and [pinned sample commit](https://github.com/SmartterHealth/FabricHackathon/tree/a84b0ff81d27c5da3b1fb8aac5641cd5507a78ac)
+- **S18** [Development process using branched workspaces](https://learn.microsoft.com/en-us/fabric/cicd/git-integration/branched-workspace)
 
-Prepared October 28 2026. Python 3.12 and fabric-cicd 1.4.0 are the reference toolchain for this edition.
+Updated October 29 2026. Python 3.12 and fabric-cicd 1.4.0 are the reference toolchain for this edition.

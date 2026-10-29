@@ -1,1 +1,1 @@
-"""HealthFirst Fabric CI/CD lab tools."""
+"""Healthcare Fabric CI/CD lab tools."""

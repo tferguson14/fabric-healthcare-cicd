@@ -30,7 +30,7 @@ def config(path=None):
             raise ValueError(f"Each environment needs a different {key}.")
     if cfg["lakehouse_name"] != "healthcare_lakehouse":
         raise ValueError("This lab expects lakehouse_name healthcare_lakehouse.")
-    if cfg["notebook_order"] != ["HF01_Bronze", "HF02_Silver", "HF03_Gold", "HF04_Validate"]:
+    if cfg["notebook_order"] != ["HC01_Bronze", "HC02_Silver", "HC03_Gold", "HC04_Validate"]:
         raise ValueError("Keep the four lab notebooks in the documented order.")
     scope = set(cfg["items_in_scope"])
     if not {"Lakehouse", "Notebook"} <= scope or not scope <= {"Lakehouse", "Notebook", "DataPipeline"}:
